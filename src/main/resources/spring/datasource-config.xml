@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Application context definition for Datasource. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:jee="http://www.springframework.org/schema/jee"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+         http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://www.springframework.org/schema/context
+         http://www.springframework.org/schema/context/spring-context.xsd
+         http://www.springframework.org/schema/jdbc
+         http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+         http://www.springframework.org/schema/jee
+         http://www.springframework.org/schema/jee/spring-jee.xsd">
+
+	<!-- ========================= DATASOURCE DEFINITION ========================= -->
+
+	<!-- JDBC-related settings for the dataSource definition -->
+	<!-- 因為使用jasypt，要把普通的property-placeholder拿掉
+	<context:property-placeholder location="classpath:spring/data-access.properties"
+		system-properties-mode="OVERRIDE" /> -->
+
+	<!-- DataSource configuration for the tomcat jdbc connection pool -->
+	<bean id="dataSource" class="org.apache.tomcat.jdbc.pool.DataSource"
+		p:driverClassName="${jdbc.driverClassName}" p:url="${jdbc.url}"
+		p:username="${jdbc.username}" p:password="${jdbc.password}"
+		p:initialSize="${jdbc.initialSize}" p:maxActive="${jdbc.maxActive}" />
+	
+	<!-- 加密entity欄位用，encryptor共用business-config.xml中的 configurationEncrypto r-->
+	<bean id="hibernateStringEncryptor" class="org.jasypt.hibernate4.encryptor.HibernatePBEStringEncryptor">
+        <property name="registeredName">
+            <value>hibernateStringEncryptor</value>
+        </property>
+        <property name="encryptor">
+        	<ref bean="standardStringEncryptor" />
+    	</property>
+        <!-- for testing 
+        <property name="password">
+            <value>testvalue</value>
+        </property> -->
+    </bean>
+
+	<!-- Database initializer. If any of the script fails, the initialization 
+		stops. -->
+	<!-- As an alternative, for embedded databases see <jdbc:embedded-database/>. -->
+	<!-- <jdbc:initialize-database data-source="dataSource">
+		<jdbc:script location="${jdbc.dataLocation}" />
+	</jdbc:initialize-database> -->
+
+</beans>

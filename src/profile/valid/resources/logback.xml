@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
+    <!-- To enable JMX Management -->
+    <jmxConfigurator/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+        <!-- Appender for access log file -->
+	<appender name="FILE_ACCESS"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<!-- daily rollover -->
+			<fileNamePattern>/var/log/pdis-helpdesk/access-%d{yyyy-MM-dd}.log</fileNamePattern>
+			<!-- keep 10 days' history -->
+			<maxHistory>50</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>
+				%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n
+			</pattern>
+		</encoder>
+		<!-- log level: deny all events with a level below INFO, that is TRACE and DEBUG -->
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>DEBUG</level>
+		</filter>
+		<!-- max log file size -->
+		<triggeringPolicy
+			class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<maxFileSize>2MB</maxFileSize>
+		</triggeringPolicy>
+	</appender>
+	
+	<!-- Appender for error log file -->
+	<appender name="FILE_ERROR"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<!-- daily rollover -->
+			<fileNamePattern>/var/log/pdis-helpdesk/error-%d{yyyy-MM-dd}.log</fileNamePattern>
+			<!-- keep 10 days' history -->
+			<maxHistory>50</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>
+				%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n
+			</pattern>
+		</encoder>
+		<!-- log level: deny all events with a level below ERROR -->
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>ERROR</level>
+		</filter>
+		<!-- max log file size -->
+		<triggeringPolicy
+			class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<maxFileSize>2MB</maxFileSize>
+		</triggeringPolicy>
+	</appender>
+
+	<logger name="com.tradevan" level="debug"/>
+    <logger name="org.hibernate" level="debug"/>
+    <logger name="org.springframework.security" level="debug"/>    
+    <root level="info">
+        <appender-ref ref="console"/>
+        <appender-ref ref="FILE_ACCESS" />
+		<appender-ref ref="FILE_ERROR" />
+    </root>
+</configuration>

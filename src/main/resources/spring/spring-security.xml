@@ -1,0 +1,99 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+              http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.2.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- 把需要的資源檔排除再security檢查外 -->
+	<security:http security="none" pattern="/favicon.ico" />
+	<security:http security="none" pattern="/images/**" />
+	<security:http security="none" pattern="/css/**" />
+	<security:http security="none" pattern="/js/**" />
+	<security:http security="none" pattern="/semantic/**" />
+	<security:http security="none" pattern="/semantic_ui/**" />
+	<security:http security="none" pattern="/fonts/**" />
+	<security:http security="none" pattern="/font-awesome/**" />
+
+	<!-- 主要設定 -->
+	<security:http auto-config="true">
+
+		<!-- <security:intercept-url pattern="/j_spring_security_check**" access="IS_AUTHENTICATED_ANONYMOUSLY" 
+			/> -->        <!-- <security:intercept-url pattern="/workshop/**" access="ROLE_USER" /> -->
+		<security:intercept-url pattern="/login"
+			access="IS_AUTHENTICATED_ANONYMOUSLY" />
+		<security:intercept-url pattern="/admin/**"
+			access="ROLE_ADMIN" />
+		<security:intercept-url pattern="/user/**"
+			access="ROLE_ADMIN,ROLE_USER" />
+		<security:intercept-url pattern="/**"
+			access="IS_AUTHENTICATED_FULLY" />
+		<security:access-denied-handler
+			error-page="/login_" />
+
+		<security:form-login login-page="/login"
+			authentication-failure-url="/login?error"
+			username-parameter="j_username" password-parameter="j_password" 
+			authentication-success-handler-ref="helpdeskAuthenticationSuccessHandler"/>
+			
+		<security:logout logout-success-url="/login" />
+
+	</security:http>
+	
+	<!-- 處理不同角色的帳號登入成功時的導頁目標  -->
+	<bean id="helpdeskAuthenticationSuccessHandler"
+        class="com.tradevan.pdis.helpdesk.security.SimpleUrlAuthenticationSuccessHandler" />
+
+	<!--  寫死的帳號密碼，for testing
+		<security:authentication-manager erase-credentials="false"> <security:authentication-provider> 
+		<security:user-service> <user name="ddkr" password="1986" authorities="ROLE_ADMIN" 
+		/> <security:user name="2904" password="2904" authorities="ROLE_USER" /> 
+		</security:user-service> </security:authentication-provider> </security:authentication-manager> 
+	-->
+
+	<security:authentication-manager>
+		<security:authentication-provider>
+			<!-- 指定hash密碼的bean -->
+			<security:password-encoder ref="pwdEncoder" />
+			<!-- 使用DB處存帳密的user-service設定，select的欄位數量，順序固定，名稱可不同。 from where可以任意組 -->
+			<security:jdbc-user-service
+				data-source-ref="dataSource"
+				users-by-username-query="select user_name,password,enabled from PD_USERS where user_name=?"
+				authorities-by-username-query="select u.user_name, r.role_name from PD_ROLES r, PD_USERS u, PD_USER_ROLE ur where u.user_name = ? and r.id = ur.role_id and u.id = ur.user_id" />
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+	<!-- 頁面使用ss tag一定要加這個bean -->
+	<bean id="webexpressionHandler"
+		class="org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler" />
+		
+	
+	<!-- <bean id="customAuthenticationFailureHandler"
+        class="com.tradevan.samples.security.CustomAuthenticationFailureHandler" /> -->
+    <!-- <bean id="customAuthenticationFailureHandler" class="org.springframework.security.web.authentication.ExceptionMappingAuthenticationFailureHandler" >
+            <property name="allowSessionCreation" value="true"/>
+            <property name="exceptionMappings">
+                <props>
+                    <prop key="org.jasypt.exceptions.EncryptionOperationNotPossibleException">/login_?error</prop>
+                    
+                </props>
+            </property>
+    </bean> -->
+    
+    <!-- spring security本身的password encoder
+    <bean id="pwdEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+  	</bean>
+	 -->
+	 
+	 
+	<!-- password encoder , 整合jasypt -->
+	<bean id="pwdEncoder" class="org.jasypt.spring.security3.PasswordEncoder">
+		<property name="stringDigester">
+			<ref bean="jasyptStringDigester" />
+		</property>
+	</bean>
+	<!-- jasypt string digest，用來進行密碼hashing，結果不可逆。 可選擇演算法與重複hash次數，官方建議1000以上。 -->
+	<bean id="jasyptStringDigester" class="org.jasypt.digest.StandardStringDigester">
+		<property name="algorithm" value="SHA-256" />
+		<property name="iterations" value="1000" />
+	</bean>
+</beans>

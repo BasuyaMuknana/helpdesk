@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<decorators defaultdir="/WEB-INF/jsp/decorators">
+	<excludes>
+		<pattern>/login</pattern>
+	</excludes>
+	<decorator name="encoding" page="encoding.jsp"/>
+	<decorator name="admin" page="admin_layout.jsp">
+		<pattern>/admin/**</pattern>
+	</decorator>
+	<decorator name="user" page="user_layout.jsp">
+		<pattern>/user/**</pattern>
+	</decorator>
+	
+	<!-- <decorator name="main" page="main.jsp">
+		<pattern>/*</pattern>
+	</decorator> 
+	<decorator name="blank" page="blank.jsp">
+		<pattern>/samples/visit_execute.*</pattern>
+	</decorator>-->
+	
+</decorators>

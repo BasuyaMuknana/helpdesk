@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Repository and Service layers -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<!-- ========================= RESOURCE DEFINITIONS ========================= -->
+	
+	<context:property-placeholder
+    	location="classpath:conf/*.properties"
+    	system-properties-mode="OVERRIDE" ignore-unresolvable="true" />
+
+	<!-- import the dataSource definition -->
+	<import resource="datasource-config.xml" />
+    
+    <!-- import the spring security definition --> 
+    <import resource="classpath:spring/spring-security.xml"/>
+
+	<context:component-scan base-package="com.tradevan.pdis.helpdesk" />
+
+	<!-- Configurer that replaces ${...} placeholders with values from a properties 
+		file -->
+	<!--<context:property-placeholder location="classpath:spring/data-access.properties"
+		system-properties-mode="OVERRIDE" /> -->
+
+	<!-- enables scanning for @Transactional annotations -->
+	<tx:annotation-driven />
+
+	<!-- ================== 3 Profiles to choose from =================== - 
+		default (uses JPA) - jdbc (uses Spring" JdbcTemplate) - spring-data-jpa ========================================================================== -->
+
+	<beans profile="default,spring-data-jpa">
+		<!-- JPA EntityManagerFactory -->
+		<bean id="entityManagerFactory"
+			class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
+			p:dataSource-ref="dataSource">
+			<property name="jpaVendorAdapter">
+				<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"
+					p:database="${jpa.database}" p:showSql="${jpa.showSql}" />
+			</property>
+
+			<property name="jpaProperties">
+				<props>
+					<!-- <prop key="hibernate.jdbc.fetch_size">50</prop> -->
+					<prop key="hibernate.jdbc.batch_size">50</prop>
+					<prop key="hibernate.enable_lazy_load_no_trans">true</prop>
+					<prop key="hibernate.connection.charSet">UTF-8</prop>
+					<prop key="hibernate.hbm2ddl.auto">update</prop>
+				</props>
+			</property>
+
+			<property name="packagesToScan" value="com.tradevan.samples,com.tradevan.pdis" />
+		</bean>
+
+		<!-- Transaction manager for a single JPA EntityManagerFactory (alternative 
+			to JTA) -->
+		<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager"
+			p:entityManagerFactory-ref="entityManagerFactory" />
+
+
+		<!-- Post-processor to perform exception translation on @Repository classes 
+			(from native exceptions such as JPA PersistenceExceptions to Spring's DataAccessException 
+			hierarchy). -->
+		<bean
+			class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" />
+
+		<!-- -->
+		<!-- Configuration for encryptor, based on environment variables. -->
+		<!-- -->
+		<!-- In this example, the encryption password will be read from an -->
+		<!-- environment variable called "APP_ENCRYPTION_PASSWORD" which, once -->
+		<!-- the application has been started, could be safely unset. -->
+		<!-- jasypt 字串加密機制，可使用於DB機敏資料加密以及設定檔的value加密，運算結果可逆。
+			使用前必須指定一個密碼，該密碼需存在於環境變數或系統變數，若沒指定該密碼或找不到時會出nullpointexception -->
+		<bean id="environmentVariablesConfiguration"
+			class="org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig">
+			<property name="algorithm" value="PBEWithMD5AndDES" />
+			<!-- <property name="passwordEnvName" value="APP_ENCRYPTION_PASSWORD" /> -->
+			<property name="passwordSysPropertyName" value="APP_ENCRYPTION_PASSWORD" />
+			 <!-- actual password here for testing ONLY 
+			  <property name="password" value="2904" />
+			 --> 
+		</bean>
+
+		<!-- The will be the encryptor used for decrypting configuration values. -->
+		<!-- 將前述的環境設定指給stringEncryptor-->
+		<bean id="standardStringEncryptor" class="org.jasypt.encryption.pbe.StandardPBEStringEncryptor">
+			<property name="config" ref="environmentVariablesConfiguration" />
+		</bean>
+
+		<!-- -->
+		<!-- The EncryptablePropertyPlaceholderConfigurer will read the -->
+		<!-- .properties files and make their values accessible as ${var} -->
+		<!-- -->
+		<!-- Our "configurationEncryptor" bean (which implements -->
+		<!-- org.jasypt.encryption.StringEncryptor) is set as a constructor arg. -->
+		<!-- 使用jasypt string encryptor的Configurer，此bean會使用前述的string encrypter解譯list中的設定檔中的加密字串-->
+		<bean id="propertyConfigurer"
+			class="org.jasypt.spring31.properties.EncryptablePropertyPlaceholderConfigurer">
+			<constructor-arg ref="standardStringEncryptor" />
+			<property name="locations">
+				<list>
+					<value>classpath:spring/data-access.properties</value>
+				</list>
+			</property>
+		</bean>
+	</beans>
+
+
+	<beans profile="default">
+		<!-- Loads JPA beans Will automatically be transactional due to @Transactional. 
+			EntityManager will be auto-injected due to @PersistenceContext. PersistenceExceptions 
+			will be auto-translated due to @Repository. -->
+		<context:component-scan base-package="com.tradevan.samples.repository.impl" />
+	</beans>
+
+</beans>
